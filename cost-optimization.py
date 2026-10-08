@@ -117,8 +117,6 @@ class TokenBudget:
 
 class BudgetedLLM:
     """LLM with token budgeting."""
-    pass
-
     def __init__(self, max_tokens: int = 4000):
         self.llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
         self.budget = TokenBudget(max_tokens_per_request=max_tokens)
@@ -169,5 +167,4 @@ def demo_token_budgeting():
 
 if __name__ == "__main__":
     # demo_model_routing()
-    # demo_caching()
     demo_token_budgeting()
