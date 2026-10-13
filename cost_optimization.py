@@ -61,6 +61,43 @@ class ModelRouter:
         return response.content, model_name, estimated_cost
 
 
+class SemanticCache:
+    """Cache responses with semantic similarity matching."""
+    def __init__(self, similarity_threshold: float = 0.0):
+        self.cache = {}
+        self.threshold = similarity_threshold
+        self.embedder = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+
+    def _hash_query(self, query: str) -> str:
+        normalized = query.lower().strip()
+        return hashlib.md5(normalized.encode()).hexdigest()
+
+    def get(self, query: str) -> Optional[str]:
+        query_hash = self._hash_query(query)
+
+        if query_hash in self.cache:
+            return self.cache[query_hash]["response"]
+
+        return None
+
+    def set(self, query: str, response: str):
+        query_hash = self._hash_query(query)
+        self.cache[query_hash] = {"query": query, "response": response}
+
+    def stats(self) -> dict:
+        return {"cached_queries": len(self.cache)}
+
+
+class CachedLLM:
+    def __init__(self):
+        self.llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+        self.cache = SemanticCache()
+        self.cache_hits = 0
+        self.cache_misses = 0
+
+
+    
+
 def demo_model_routing():
     """Demonstrate model routing."""
 
