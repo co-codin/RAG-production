@@ -94,8 +94,49 @@ class CachedLLM:
         self.cache = SemanticCache()
         self.cache_hits = 0
         self.cache_misses = 0
-    # TODO
 
+    @traceable(name="cached_invoke")
+    def invoke(self, query: str) -> tuple[str, bool]:
+        cached = self.cache.get(query)
+        if cached:
+            self.cache_hits += 1
+            return cached, True
+
+        self.cache_misses += 1
+        response = self.llm.invoke(query)
+        result = response.content
+
+        self.cache.set(query, result)
+        return result, False
+
+    def get_stats(self) -> dict:
+        total = self.cache_hits + self.cache_misses
+        hit_rate = self.cache_hits / total if total > 0 else 0
+        return {
+            "hits": self.cache_hits,
+            "misses": self.cache_misses,
+            "hit_rate": f"{hit_rate:.1%}",
+        }
+
+def demo_caching():
+    llm = CachedLLM()
+
+    queries = [
+        "What is Python?",
+        "What is JavaScript?",
+        "What is Python?",  # Cache hit
+        "What is python?",  # Cache hit (normalized)
+        "What is Rust?",
+    ]
+
+    print("\nCaching Demo:\n")
+
+    for query in queries:
+        result, from_cache = llm.invoke(query)
+        source = "CACHE" if from_cache else "LLM"
+        print(f"[{source}] {query} -> {result[:30]}...")
+
+    print(f"\nStats: {llm.get_stats()}")
 
 
 def demo_model_routing():
